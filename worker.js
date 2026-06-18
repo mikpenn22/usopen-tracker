@@ -218,14 +218,14 @@ const DEF_PICKS={
   Mike:[{tier:1,name:"Cameron Young"},{tier:2,name:"Tommy Fleetwood"},{tier:3,name:"Sam Burns"},{tier:4,name:"Joaquin Niemann"},{tier:5,name:"Jason Day"},{tier:6,name:"Max Greyserman"},{tier:7,name:"Neal Shipley"}],
   Nate:[{tier:1,name:"Jon Rahm"},{tier:2,name:"Matt Fitzpatrick"},{tier:3,name:"Viktor Hovland"},{tier:4,name:"Shane Lowry"},{tier:5,name:"Sahith Theegala"},{tier:6,name:"Emiliano Grillo"},{tier:7,name:"Ben Silverman"}],
   Ben:[{tier:1,name:"Scottie Scheffler"},{tier:2,name:"Tommy Fleetwood"},{tier:3,name:"Sam Burns"},{tier:4,name:"Maverick McNealy"},{tier:5,name:"J.T. Poston"},{tier:6,name:"Nick Taylor"},{tier:7,name:"Nathan Kimsey"}],
-  Henry:[{tier:1,name:"TBD"},{tier:2,name:"TBD"},{tier:3,name:"TBD"},{tier:4,name:"TBD"},{tier:5,name:"TBD"},{tier:6,name:"TBD"},{tier:7,name:"TBD"}],
-  Eric:[{tier:1,name:"TBD"},{tier:2,name:"TBD"},{tier:3,name:"TBD"},{tier:4,name:"TBD"},{tier:5,name:"TBD"},{tier:6,name:"TBD"},{tier:7,name:"TBD"}],
-  Cam:[{tier:1,name:"TBD"},{tier:2,name:"TBD"},{tier:3,name:"TBD"},{tier:4,name:"TBD"},{tier:5,name:"TBD"},{tier:6,name:"TBD"},{tier:7,name:"TBD"}],
-  Jake:[{tier:1,name:"TBD"},{tier:2,name:"TBD"},{tier:3,name:"TBD"},{tier:4,name:"TBD"},{tier:5,name:"TBD"},{tier:6,name:"TBD"},{tier:7,name:"TBD"}],
-  Kurt:[{tier:1,name:"TBD"},{tier:2,name:"TBD"},{tier:3,name:"TBD"},{tier:4,name:"TBD"},{tier:5,name:"TBD"},{tier:6,name:"TBD"},{tier:7,name:"TBD"}],
-  Luke:[{tier:1,name:"TBD"},{tier:2,name:"TBD"},{tier:3,name:"TBD"},{tier:4,name:"TBD"},{tier:5,name:"TBD"},{tier:6,name:"TBD"},{tier:7,name:"TBD"}],
-  Mitch:[{tier:1,name:"TBD"},{tier:2,name:"TBD"},{tier:3,name:"TBD"},{tier:4,name:"TBD"},{tier:5,name:"TBD"},{tier:6,name:"TBD"},{tier:7,name:"TBD"}],
-  Quincy:[{tier:1,name:"TBD"},{tier:2,name:"TBD"},{tier:3,name:"TBD"},{tier:4,name:"TBD"},{tier:5,name:"TBD"},{tier:6,name:"TBD"},{tier:7,name:"TBD"}]
+  Henry:[{tier:1,name:"Rory McIlroy"},{tier:2,name:"Matt Fitzpatrick"},{tier:3,name:"Chris Gotterup"},{tier:4,name:"Shane Lowry"},{tier:5,name:"Alex Fitzpatrick"},{tier:6,name:"Andrew Putnam"},{tier:7,name:"Cole Hammer"}],
+  Eric:[{tier:1,name:"Scottie Scheffler"},{tier:2,name:"Tommy Fleetwood"},{tier:3,name:"Chris Gotterup"},{tier:4,name:"Kurt Kitayama"},{tier:5,name:"Jackson Koivun"},{tier:6,name:"Lucas Herbert"},{tier:7,name:"Neal Shipley"}],
+  Cam:[{tier:1,name:"Scottie Scheffler"},{tier:2,name:"Russell Henley"},{tier:3,name:"J.J. Spaun"},{tier:4,name:"Joaquin Niemann"},{tier:5,name:"Harry Hall"},{tier:6,name:"Max Greyserman"},{tier:7,name:"Harry Higgs"}],
+  Jake:[{tier:1,name:"Scottie Scheffler"},{tier:2,name:"Tommy Fleetwood"},{tier:3,name:"Sam Burns"},{tier:4,name:"Kurt Kitayama"},{tier:5,name:"Jackson Koivun"},{tier:6,name:"Andrew Putnam"},{tier:7,name:"J.B. Holmes"}],
+  Kurt:[{tier:1,name:"Jon Rahm"},{tier:2,name:"Matt Fitzpatrick"},{tier:3,name:"Chris Gotterup"},{tier:4,name:"Ben Griffin"},{tier:5,name:"J.T. Poston"},{tier:6,name:"Matti Schmid"},{tier:7,name:"Angel Hidalgo"}],
+  Luke:[{tier:1,name:"Scottie Scheffler"},{tier:2,name:"Tommy Fleetwood"},{tier:3,name:"Viktor Hovland"},{tier:4,name:"Shane Lowry"},{tier:5,name:"Alex Fitzpatrick"},{tier:6,name:"Michael Kim"},{tier:7,name:"Neal Shipley"}],
+  Mitch:[{tier:1,name:"Scottie Scheffler"},{tier:2,name:"Wyndham Clark"},{tier:3,name:"Sam Burns"},{tier:4,name:"Harris English"},{tier:5,name:"Jackson Suber"},{tier:6,name:"Carlos Ortiz"},{tier:7,name:"Harry Higgs"}],
+  Quincy:[{tier:1,name:"Scottie Scheffler"},{tier:2,name:"Ludvig Åberg"},{tier:3,name:"Sam Burns"},{tier:4,name:"Adam Scott"},{tier:5,name:"Jacob Bridgeman"},{tier:6,name:"Nick Taylor"},{tier:7,name:"Matthew Jordan"}]
 };
 function loadPicks(){try{const s=localStorage.getItem("uso26");return s?JSON.parse(s):JSON.parse(JSON.stringify(DEF_PICKS));}catch(e){return JSON.parse(JSON.stringify(DEF_PICKS));}}
 function savePicks2(){try{localStorage.setItem("uso26",JSON.stringify(PICKS));}catch(e){}}
