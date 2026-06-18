@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>US Open Tracker — Debug</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',monospace;background:#0d1117;color:#c9d1d9;padding:20px;line-height:1.5}
+h1{color:#d4af37;font-size:18px;margin-bottom:6px}
+p{color:#8b949e;font-size:13px;margin-bottom:16px}
+.box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:16px}
+.label{color:#58a6ff;font-size:12px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+pre{white-space:pre-wrap;word-break:break-word;font-size:12px;color:#c9d1d9;background:#0d1117;padding:12px;border-radius:6px;border:1px solid #21262d;overflow-x:auto}
+.ok{color:#3fb950}.err{color:#f85149}
+button{background:#238636;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:16px}
+button:hover{background:#2ea043}
+.copy-btn{background:#1f6feb;margin-left:8px}
+.copy-btn:hover{background:#388bfd}
+</style>
+</head>
+<body>
+<h1>🔍 US Open Tracker — ESPN Data Debug</h1>
+<p>This page shows the raw structure ESPN returns, so we can see which fields hold the scores. Copy the box below and paste it back in the chat.</p>
+<button onclick="load()">↻ Reload Data</button>
+<button class="copy-btn" onclick="copyAll()">📋 Copy All</button>
+<div id="out"><div class="box">Loading…</div></div>
+<script>
+async function load(){
+  const out=document.getElementById("out");
+  out.innerHTML='<div class="box">Loading ESPN data…</div>';
+  try{
+    const res=await fetch("/api/raw");
+    const txt=await res.text();
+    let data;try{data=JSON.parse(txt);}catch(e){
+      out.innerHTML='<div class="box"><div class="label err">Not JSON — function may not be deployed</div><pre>'+txt.slice(0,2000)+'</pre></div>';
+      return;
+    }
+    let html="";
+    (data.endpoints||[]).forEach((ep,i)=>{
+      html+='<div class="box">';
+      html+='<div class="label">Endpoint '+(i+1)+'</div>';
+      html+='<pre>URL: '+ep.url+'\nStatus: '+(ep.status||"?")+(ep.error?(' \nERROR: '+ep.error):"")+'</pre>';
+      if(ep.topLevelKeys)html+='<div class="label">Top-level keys</div><pre>'+JSON.stringify(ep.topLevelKeys)+'</pre>';
+      if(ep.pathCounts)html+='<div class="label">Competitor path counts</div><pre>'+JSON.stringify(ep.pathCounts,null,2)+'</pre>';
+      if(ep.firstCompetitor){
+        html+='<div class="label ok">★ FIRST COMPETITOR (this is what we need)</div>';
+        html+='<pre id="firstcomp">'+JSON.stringify(ep.firstCompetitor,null,2)+'</pre>';
+      }
+      html+='</div>';
+    });
+    out.innerHTML=html||'<div class="box err">No data returned</div>';
+    window._raw=txt;
+  }catch(e){
+    out.innerHTML='<div class="box"><div class="label err">Fetch failed</div><pre>'+e.message+'</pre></div>';
+  }
+}
+function copyAll(){
+  const fc=document.getElementById("firstcomp");
+  const t=fc?fc.textContent:(window._raw||"nothing to copy");
+  navigator.clipboard.writeText(t).then(()=>alert("Copied! Paste it back in the chat."));
+}
+load();
+</script>
+</body>
+</html>
