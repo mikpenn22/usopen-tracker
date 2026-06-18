@@ -239,7 +239,33 @@ function fr(v){if(!v||v==="-"||v===null)return"-";const n=parseInt(v);if(isNaN(n
 function ghr(p){if(!p)return TOTAL_HOLES;if(p.cut)return 0;const t=p.thru;if(!t||t==="-")return TOTAL_HOLES;if(t==="F")return 0;if(typeof t==="string"&&/[a-zA-Z]/.test(t)&&t.includes(":"))return TOTAL_HOLES;const rd=[p.r1,p.r2,p.r3,p.r4].filter(r=>r!==null&&r!==undefined&&r!=="-").length;const ip=parseInt(t)||0;const base=ip>0?(rd>0?(rd-1)*18:0):rd*18;return Math.max(0,TOTAL_HOLES-(ip>0?base+ip:rd*18));}
 function gpd(name){if(name==="TBD")return null;const nl=name.toLowerCase();let p=lbData.find(x=>x.name&&x.name.toLowerCase()===nl);if(p)return p;const last=nl.split(" ").slice(-1)[0];return lbData.find(x=>x.name&&x.name.toLowerCase().includes(last))||null;}
 function gps(name){if(!prevLbData.length)return null;const last=name.toLowerCase().split(" ").slice(-1)[0];const p=prevLbData.find(x=>x.name&&x.name.toLowerCase().includes(last));return p?p.total:null;}
-function calcE(person){const picks=PICKS[person];let total=0,hasAny=false,hr=0;const det=picks.map(pk=>{if(pk.name==="TBD")return{...pk,player:null,score:null,holesRem:TOTAL_HOLES,cut:false};const p=gpd(pk.name);const h=ghr(p);if(p&&p.total!==null&&p.total!==undefined){total+=p.total;hasAny=true;}hr+=h;return{...pk,player:p,score:p?p.total:null,holesRem:h,cut:p?!!p.cut:false};});return{total:hasAny?total:null,holesRem:hr,pickDetails:det};}
+function calcE(person){
+  const picks=PICKS[person];
+  let hr=0;
+  const scored=[]; // scores of picks that have a live total
+  const det=picks.map(pk=>{
+    if(pk.name==="TBD")return{...pk,player:null,score:null,holesRem:TOTAL_HOLES,cut:false,counts:false};
+    const p=gpd(pk.name);
+    const h=ghr(p);
+    hr+=h;
+    const hasScore=!!(p&&p.total!==null&&p.total!==undefined);
+    if(hasScore)scored.push({name:pk.name,score:p.total});
+    return{...pk,player:p,score:p?p.total:null,holesRem:h,cut:p?!!p.cut:false,counts:false};
+  });
+  // Take the 4 BEST (lowest) scores. Need at least 4 scored picks, else N/A.
+  let total=null;
+  if(scored.length>=4){
+    const best=[...scored].sort((a,b)=>a.score-b.score).slice(0,4);
+    total=best.reduce((s,x)=>s+x.score,0);
+    // mark which picks count (match by name, only first 4 best)
+    const used={};
+    best.forEach(b=>{used[b.name]=(used[b.name]||0)+1;});
+    det.forEach(d=>{
+      if(d.name!=="TBD"&&d.score!==null&&used[d.name]>0){d.counts=true;used[d.name]--;}
+    });
+  }
+  return{total,holesRem:hr,pickDetails:det,countingNeeded:4,scoredCount:scored.length};
+}
 function setStatus(state,msg){["sd1","sd2"].forEach(id=>{const el=document.getElementById(id);if(el)el.className="status-dot"+(state==="loading"?" loading":state==="error"?" error":state==="paused"?" paused":"");});if(document.getElementById("st1"))document.getElementById("st1").textContent=msg;if(document.getElementById("st2"))document.getElementById("st2").textContent=msg.includes("Live")?"Synced with live data":msg;}
 
 async function loadData(manual=false){
@@ -294,12 +320,16 @@ function renderStandings(){
     const sr=byScore.findIndex(x=>x.person===e.person),rank=sortMode==="score"?i+1:(sr>=0?sr+1:sorted.length);
     const medal=rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":"",s=fs(e.total),st=e.total===null?"N/A":s.t,sc=e.total===null?"score-even":s.c;
     const hasTBD=e.pickDetails.some(p=>p.name==="TBD"),hasCut=e.pickDetails.some(p=>p.cut),isTied=e.total!==null&&byScore.filter(x=>x.total===e.total).length>1;
-    html+=\`<div class="st-card fade-in"><div class="st-row" onclick="togglePicks('\${e.person}')"><div class="st-rank-wrap">\${medal?\`<span class="st-rank-medal">\${medal}</span>\`:\`<span class="st-rank-num">\${rank}</span>\`}</div><div class="st-info"><div class="st-name">\${e.person}\${hasTBD?'<span class="st-tbd-note">(picks pending)</span>':""}\${hasCut?'<span class="st-cut-note">⚠ pick missed cut</span>':""}</div><div class="st-sub"><span class="st-holes-rem">\${e.holesRem} holes remaining</span>\${isTied?'<span class="st-tiebreaker">Tied · holes rem. tiebreaker</span>':""}</div></div><div class="st-meta"><span class="st-score \${sc}">\${st}</span></div><i class="ti ti-chevron-down st-chevron" id="chev-\${e.person}"></i></div><div class="st-picks-drop" id="pdrop-\${e.person}"><table class="st-pick-table"><thead><tr><th style="width:32px">Tier</th><th>Player</th><th style="width:54px;text-align:center">Score</th><th style="width:54px;text-align:center">Pos</th><th style="width:70px;text-align:center">Holes rem.</th></tr></thead><tbody>\`;
+    const needNote=e.total===null?'<span class="st-tbd-note">(needs 4 scored picks)</span>':'';
+    html+=\`<div class="st-card fade-in"><div class="st-row" onclick="togglePicks('\${e.person}')"><div class="st-rank-wrap">\${medal?\`<span class="st-rank-medal">\${medal}</span>\`:\`<span class="st-rank-num">\${rank}</span>\`}</div><div class="st-info"><div class="st-name">\${e.person}\${needNote}\${hasCut?'<span class="st-cut-note">⚠ pick missed cut</span>':""}</div><div class="st-sub"><span class="st-holes-rem">best 4 of 7 · \${e.holesRem} holes remaining</span>\${isTied?'<span class="st-tiebreaker">Tied · holes rem. tiebreaker</span>':""}</div></div><div class="st-meta"><span class="st-score \${sc}">\${st}</span></div><i class="ti ti-chevron-down st-chevron" id="chev-\${e.person}"></i></div><div class="st-picks-drop" id="pdrop-\${e.person}"><table class="st-pick-table"><thead><tr><th style="width:32px">Tier</th><th>Player</th><th style="width:54px;text-align:center">Score</th><th style="width:54px;text-align:center">Pos</th><th style="width:70px;text-align:center">Holes rem.</th></tr></thead><tbody>\`;
     e.pickDetails.forEach(pk=>{
       const isTBD=pk.name==="TBD",p=pk.player,s2=p&&p.total!==null?fs(p.total):null;
       const st2=isTBD?"—":p===null?"pre-tmt":p.total===null?"pre-tmt":s2.t,sc2=isTBD?"":p&&p.total!==null?s2.c:"";
       const pos=isTBD?"—":p?p.pos||"-":"-",hr=pk.holesRem,pc=isTBD?"na":hr===0?"done":"",hd=isTBD?"—":hr===0?"Done":hr,cb=pk.cut?'<span class="pick-cut-badge">CUT</span>':"";
-      html+=\`<tr><td style="text-align:center;font-size:10px;color:#9ca3af;font-weight:600">T\${pk.tier}</td><td>\${isTBD?'<span style="color:#9ca3af;font-style:italic">TBD</span>':\`<span class="flag">\${gf(pk.name,p?.country||"")}</span>\${pk.name}\${cb}\`}</td><td style="text-align:center"><span class="\${sc2}">\${st2}</span></td><td style="text-align:center;font-size:12px;color:#6b7280">\${pos}</td><td style="text-align:center"><span class="holes-pip \${pc}">\${hd}</span></td></tr>\`;
+      const counts=pk.counts===true;
+      const rowStyle=counts?'background:#f0fdf4':(pk.score!==null&&!isTBD?'opacity:.45':'');
+      const tag=counts?'<span style="font-size:9px;font-weight:700;color:#15803d;background:#dcfce7;padding:1px 5px;border-radius:4px;margin-left:5px">COUNTS</span>':(pk.score!==null&&!isTBD?'<span style="font-size:9px;color:#9ca3af;margin-left:5px">dropped</span>':"");
+      html+=\`<tr style="\${rowStyle}"><td style="text-align:center;font-size:10px;color:#9ca3af;font-weight:600">T\${pk.tier}</td><td>\${isTBD?'<span style="color:#9ca3af;font-style:italic">TBD</span>':\`<span class="flag">\${gf(pk.name,p?.country||"")}</span>\${pk.name}\${cb}\${tag}\`}</td><td style="text-align:center"><span class="\${sc2}">\${st2}</span></td><td style="text-align:center;font-size:12px;color:#6b7280">\${pos}</td><td style="text-align:center"><span class="holes-pip \${pc}">\${hd}</span></td></tr>\`;
     });
     html+=\`</tbody></table></div></div>\`;
   });
@@ -317,7 +347,10 @@ function renderPicks(){
       const isTBD=pk.name==="TBD",p=pk.player,s2=p&&p.total!==null?fs(p.total):null;
       const st2=isTBD?"TBD":p===null?"pre-tmt":p.total===null?"pre-tmt":s2.t,sc2=isTBD?"tbd":p&&p.total!==null?s2.c:"tbd";
       const pos=p&&p.pos?" · "+p.pos:"",cb=pk.cut?'<span class="pick-cut-badge">CUT</span>':"";
-      html+=\`<div class="pick-row"><span class="pick-tier">T\${pk.tier}</span><span class="pick-name">\${isTBD?"":gf(pk.name,p?.country||"")+" "}\${pk.name}\${cb}</span><span class="pick-score \${sc2}">\${st2}\${pos}</span></div>\`;
+      const counts=pk.counts===true;
+      const tag=counts?'<span style="font-size:9px;font-weight:700;color:#15803d;background:#dcfce7;padding:1px 5px;border-radius:4px;margin-left:5px">COUNTS</span>':(pk.score!==null&&!isTBD?'<span style="font-size:9px;color:#9ca3af;margin-left:5px">dropped</span>':"");
+      const rowOp=(!counts&&pk.score!==null&&!isTBD)?'opacity:.5':'';
+      html+=\`<div class="pick-row" style="\${rowOp}"><span class="pick-tier">T\${pk.tier}</span><span class="pick-name">\${isTBD?"":gf(pk.name,p?.country||"")+" "}\${pk.name}\${cb}\${tag}</span><span class="pick-score \${sc2}">\${st2}\${pos}</span></div>\`;
     });
     html+=\`</div></div>\`;
   });
