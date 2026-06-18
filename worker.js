@@ -252,7 +252,7 @@ async function loadData(manual=false){
     if(d.error)throw new Error("API: "+d.error);
     if(!d.players||!d.players.length)throw new Error("no players returned");
     prevLbData=[...lbData];
-    const active=d.players.filter(p=>!p.cut).sort((a,b)=>{if(a.total===null&&b.total===null)return 0;if(a.total===null)return 1;if(b.total===null)return -1;return a.total-b.total;});
+    const active=d.players.filter(p=>!p.cut).sort((a,b)=>{const ao=a.sortOrder??9999,bo=b.sortOrder??9999;if(ao!==bo)return ao-bo;if(a.total===null&&b.total===null)return 0;if(a.total===null)return 1;if(b.total===null)return -1;return a.total-b.total;});
     lbData=[...active,...d.players.filter(p=>p.cut)];
     renderLB();renderStandings();renderPicks();
     const t=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
@@ -421,37 +421,58 @@ function parseAny(data) {
     const name = a.displayName || a.fullName || c.displayName || "";
     let country = "";
     if (a.flag) country = a.flag.alt || a.flag.abbreviation || "";
-    if (!country && a.birthPlace) country = a.birthPlace.country || "";
+    if (!country && a.birthPlace) country = a.birthPlace.countryAbbreviation || a.birthPlace.country || "";
 
+    // TOTAL to-par: prefer scoreToPar statistic (accurate for in-progress players)
     let total = null;
-    const cands = [ c.score?.displayValue, c.score,
-      c.statistics?.find?.(s=>s.name==="scoreToPar")?.displayValue,
-      c.statistics?.find?.(s=>s.name==="scoreToPar")?.value ];
-    for (const cand of cands) {
-      if (cand===null||cand===undefined||cand==="-"||cand==="--") continue;
-      if (cand==="E"||cand==="0"||cand===0) { total=0; break; }
-      const n = parseInt(cand); if (!isNaN(n)) { total=n; break; }
+    const stat = c.statistics?.find?.(s => s.name === "scoreToPar");
+    if (stat && stat.value !== undefined && stat.value !== null) {
+      const n = parseInt(stat.value);
+      total = isNaN(n) ? null : n;
+    }
+    if (total === null) {
+      const sv = c.score?.displayValue;
+      if (sv !== undefined && sv !== null && sv !== "-" && sv !== "--") {
+        if (sv === "E" || sv === "0") total = 0;
+        else { const n = parseInt(sv); if (!isNaN(n)) total = n; }
+      }
     }
 
+    // THRU
     let thru = "-";
     const st = c.status || {};
-    if (st.type?.completed===true || st.thru===18 || st.thru==="18") thru="F";
-    else if (st.thru!==undefined && st.thru!==null && st.thru!=="") thru=String(st.thru);
-    else if (st.type?.shortDetail) thru=st.type.shortDetail;
-    else if (st.displayValue) thru=st.displayValue;
+    if (st.type?.completed === true) thru = "F";
+    else if (st.displayThru) thru = String(st.displayThru);
+    else if (st.thru !== undefined && st.thru !== null && st.thru !== "") thru = String(st.thru);
+    else if (st.teeTime && st.type?.state === "pre") {
+      const m = /T(\d{2}):(\d{2})/.exec(st.teeTime);
+      thru = m ? (m[1] + ":" + m[2]) : "-";
+    }
 
+    // POSITION
     const pos = st.position?.displayName || st.position?.id || c.order || "-";
     const ps = String(pos).toUpperCase();
-    const cut = !!(st.type?.name==="cut" || ps.includes("CUT") || ps==="MC" || ps==="WD" || ps==="DQ");
+    const cut = !!(st.type?.name === "cut" || ps.includes("CUT") || ps === "MC" || ps === "WD" || ps === "DQ");
 
-    const lines = c.linescores || c.rounds || [];
-    const rounds = lines.map(r => {
-      const v = (r && (r.displayValue ?? r.value)) ?? r;
-      if (v===null||v===undefined||v==="-"||v==="--"||v==="") return null;
-      const n = parseInt(v); return isNaN(n)?null:n;
+    // ROUND COLUMNS: use linescores[].displayValue (to-par) keyed by period
+    const lines = c.linescores || [];
+    const rp = { 1: null, 2: null, 3: null, 4: null };
+    lines.forEach((r) => {
+      if (!r) return;
+      const p = r.period;
+      if (!p || p < 1 || p > 4) return;
+      const dv = r.displayValue;
+      if (dv === undefined || dv === null || dv === "-" || dv === "--" || dv === "") return;
+      if (dv === "E") { rp[p] = 0; return; }
+      const n = parseInt(dv);
+      if (!isNaN(n)) rp[p] = n;
     });
 
-    return { name, country, pos:String(pos), total, thru,
-      r1:rounds[0]??null, r2:rounds[1]??null, r3:rounds[2]??null, r4:rounds[3]??null, cut };
+    return {
+      name, country, pos: String(pos), total, thru,
+      r1: rp[1], r2: rp[2], r3: rp[3], r4: rp[4],
+      cut,
+      sortOrder: (c.sortOrder !== undefined ? c.sortOrder : 9999)
+    };
   }).filter(p => p.name);
 }
